@@ -69,18 +69,20 @@ module OneLogin
         @attr_statements ||= begin
           attributes = Attributes.new
 
-          stmt_element = xpath_first_from_signed_assertion('/a:AttributeStatement')
-          return attributes if stmt_element.nil?
+          attribute_statement_elements = xpath_match_from_signed_assertion('/a:AttributeStatement')
+          return attributes if attribute_statement_elements.empty?
 
-          stmt_element.elements.each do |attr_element|
-            name  = attr_element.attributes["Name"]
-            values = attr_element.elements.collect{|e|
-              # SAMLCore requires that nil AttributeValues MUST contain xsi:nil XML attribute set to "true" or "1"
-              # otherwise the value is to be regarded as empty.
-              ["true", "1"].include?(e.attributes['xsi:nil']) ? nil : e.text.to_s
-            }
+          attribute_statement_elements.each do |attribute_statement_element|
+            attribute_statement_element.elements.each do |attribute_element|
+              name  = attribute_element.attributes["Name"]
+              values = attribute_element.elements.collect{|e|
+                # SAMLCore requires that nil AttributeValues MUST contain xsi:nil XML attribute set to "true" or "1"
+                # otherwise the value is to be regarded as empty.
+                ["true", "1"].include?(e.attributes['xsi:nil']) ? nil : e.text.to_s
+              }
 
-            attributes.add(name, values)
+              attributes.add(name, values)
+            end
           end
 
           attributes
@@ -187,6 +189,12 @@ module OneLogin
         node = REXML::XPath.first(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id}']#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
         node ||= REXML::XPath.first(document, "/p:Response[@ID='#{document.signed_element_id}']/a:Assertion#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
         node
+      end
+
+      def xpath_match_from_signed_assertion(subelt=nil)
+        nodes = REXML::XPath.match(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id}']#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
+        nodes ||= REXML::XPath.match(document, "/p:Response[@ID='#{document.signed_element_id}']/a:Assertion#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
+        nodes
       end
 
       def get_fingerprint
