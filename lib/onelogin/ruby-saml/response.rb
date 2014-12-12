@@ -186,13 +186,17 @@ module OneLogin
       end
 
       def xpath_first_from_signed_assertion(subelt=nil)
-        node = REXML::XPath.first(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id}']#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
+        signature_element = REXML::XPath.first(document, "//a:Assertion/ds:Signature/ds:SignedInfo/ds:Reference", { "p" => PROTOCOL, "a" => ASSERTION, "ds" => DSIG })
+        signature = signature_element.attribute("URI").value[1..-1]
+        node = REXML::XPath.first(document, "/p:Response/a:Assertion[@ID='#{signature}']#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
         node ||= REXML::XPath.first(document, "/p:Response[@ID='#{document.signed_element_id}']/a:Assertion#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
         node
       end
 
       def xpath_match_from_signed_assertion(subelt=nil)
-        nodes = REXML::XPath.match(document, "/p:Response/a:Assertion[@ID='#{document.signed_element_id}']#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
+        signature_element = REXML::XPath.first(document, "//a:Assertion/ds:Signature/ds:SignedInfo/ds:Reference", { "p" => PROTOCOL, "a" => ASSERTION, "ds" => DSIG })
+        signature = signature_element.attribute("URI").value[1..-1]
+        nodes = REXML::XPath.match(document, "/p:Response/a:Assertion[@ID='#{signature}']#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
         nodes ||= REXML::XPath.match(document, "/p:Response[@ID='#{document.signed_element_id}']/a:Assertion#{subelt}", { "p" => PROTOCOL, "a" => ASSERTION })
         nodes
       end
